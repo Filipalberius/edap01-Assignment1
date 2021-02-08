@@ -41,7 +41,7 @@ use your own algorithm for selecting actions too
 
 
 def opponents_move(env):
-    env.change_player()  # change to oppoent
+    env.change_player()  # change to opponent
     avmoves = env.available_moves()
     if not avmoves:
         env.change_player()  # change back to student before returning
@@ -60,14 +60,169 @@ def opponents_move(env):
     return state, reward, done
 
 
-def student_move():
+def student_move(state):
     """
-   TODO: Implement your min-max alpha-beta pruning algorithm here.
-   Give it whatever input arguments you think are necessary
-   (and change where it is called).
-   The function should return a move from 0-6
-   """
-    return random.choice([0, 1, 2, 3, 4, 5, 6])
+    TODO: Implement your min-max alpha-beta pruning algorithm here.
+    Give it whatever input arguments you think are necessary
+    (and change where it is called).
+    The function should return a move from 0-6
+    """
+    max_eval = float("-inf")
+
+    for child in children_of_state(state, 1):
+        tmp_eval = minimax(child, 5, float("-inf"), float("inf"), True)
+        if tmp_eval > max_eval:
+            move = move_made(state, child)
+            max_eval = tmp_eval
+
+    return move
+
+
+def minimax(state, depth, alpha, beta, maximize_player):
+    """
+    Minimax algorithm with Alpha-beta pruning to find score of a state
+    """
+
+    if player_win(state, 1):
+        return float('inf')
+
+    if player_win(state, -1):
+        return float('-inf')
+
+    if depth == 0:
+        return eval_move(state)
+
+    if maximize_player:
+        max_eval = float('-inf')
+
+        for child in children_of_state(state, 1):
+            evaluation = minimax(child, depth - 1, alpha, beta, False)
+            max_eval = max(max_eval, evaluation)
+            alpha = max(alpha, evaluation)
+
+            if beta <= alpha:
+                break
+
+        return max_eval
+
+    else:
+        min_eval = float('inf')
+
+        for child in children_of_state(state, -1):
+            evaluation = minimax(child, depth - 1, alpha, beta, True)
+            min_eval = min(min_eval, evaluation)
+            beta = min(beta, evaluation)
+
+            if beta <= alpha:
+                break
+
+        return min_eval
+
+
+def player_win(state, player):
+    """
+    WORKS
+    Checks if player has won the game given its state
+    """
+
+    """
+    Checks for wins in rows
+    """
+    for i in range(len(state)):
+        for j in range(len(state[i])-3):
+            if sum(state[i][j:j+4]) == 4*player:
+                return True
+
+    """
+    Checks for wins in columns
+    """
+    state_transpose = np.transpose(state)
+    for i in range(len(state_transpose)):
+        for j in range(len(state_transpose[i])-3):
+            if sum(state_transpose[i][j:j+4]) == 4*player:
+                return True
+
+    """
+    Checks for wins in right-going diagonals
+    """
+    for i in range(len(state)-3):
+        for j in range(len(state[i])-3):
+            if state[i][j]+state[i+1][j+1]+state[i+2][j+2]+state[i+3][j+3] == 4*player:
+                return True
+
+    """
+    Checks for wins in left-going diagonals
+    """
+    xs = [x+3 for x in range(len(state)-3)]
+    for i in xs:
+        for j in range(len(state[i])-3):
+            if state[i][j]+state[i-1][j+1]+state[i-2][j+2]+state[i-3][j+3] == 4*player:
+                return True
+
+    return False
+
+
+def eval_move(state):
+    """
+    WORKS
+    Evaluates a score for a board state
+    Returns <0 if player 1 is likely to win
+    Returns 0 if equal
+    returns >0 if player -1 is likely to win
+    """
+
+    eval_weights = [[3, 4, 5, 7, 5, 4, 3],
+                    [4, 6, 8, 10, 8, 6, 4],
+                    [5, 8, 11, 13, 11, 8, 5],
+                    [5, 8, 11, 13, 11, 8, 5],
+                    [4, 6, 8, 10, 8, 6, 4],
+                    [3, 4, 5, 7, 5, 4, 3]]
+
+    utility = 0
+    for i in range(len(eval_weights)):
+        for j in range(len(eval_weights[i])):
+            if state[i][j] == 1:
+                utility += eval_weights[i][j]
+            elif state[i][j] == -1:
+                utility -= eval_weights[i][j]
+
+    return utility
+
+
+def move_made(state, child):
+    """
+    WORKS
+    Finds what move has been made given a state and a child of that state
+    """
+    for i in range(len(state)):
+        for j in range(len(state[i])):
+            if (state[i][j] == 0) and (child[i][j] != 0):
+                return j
+
+
+def children_of_state(state, player):
+    """
+    WORKS
+    Finds the children of a board state, given player 1 or -1.
+    """
+
+    children = []
+
+    moves = [3, 4, 2, 5, 1, 6, 0]
+
+    for i in range(len(state)):
+        for move in moves:
+            if state[i][move] == 0 and i == 5:
+                child = state.copy()
+                child[i][move] = player
+                children.append(child)
+
+            elif state[i][move] == 0 and state[i+1][move] != 0:
+                child = state.copy()
+                child[i][move] = player
+                children.append(child)
+
+    return children
 
 
 def play_game(vs_server=False):
@@ -114,7 +269,7 @@ def play_game(vs_server=False):
     done = False
     while not done:
         # Select your move
-        stmove = student_move()  # TODO: change input here
+        stmove = student_move(state)  # TODO: change input here
 
         # make both student and bot/server moves
         if vs_server:
@@ -169,7 +324,7 @@ def play_game(vs_server=False):
 
 
 def main():
-    play_game(vs_server=False)
+    play_game(vs_server=True)
     # TODO: Change vs_server to True when you are ready to play against the server
     # the results of your games there will be logged
 
