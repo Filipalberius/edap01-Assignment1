@@ -62,40 +62,97 @@ def opponents_move(env):
 
 def student_move(state):
     """
-    TODO: Implement your min-max alpha-beta pruning algorithm here.
-    Give it whatever input arguments you think are necessary
-    (and change where it is called).
-    The function should return a move from 0-6
+    Selects the best move the minimax algorithm found.
     """
-    max_eval = float("-inf")
+    """
+    max_eval = -np.inf
 
     for child in children_of_state(state, 1):
-        tmp_eval = minimax(child, 5, float("-inf"), float("inf"), True)
+        tmp_eval = minimax(child, 4, -np.inf, np.inf, True)
         if tmp_eval > max_eval:
             move = move_made(state, child)
             max_eval = tmp_eval
+    """
+
+    move = minimax_decision(state, 4, -np.inf, np.inf)
 
     return move
 
 
-def minimax(state, depth, alpha, beta, maximize_player):
+def minimax_decision(state, depth, alpha, beta):
+    """
+    Minimax algorithm with Alpha-beta pruning to find score of a state
+    """
+
+    values = {x: None for x in range(7)}
+
+    for child in children_of_state(state, 1):
+        v = min_value(child, depth-1)
+        values[move_made(state, child)] = v
+
+    for key, value in dict(values).items():
+        if value is None:
+            del values[key]
+
+    if not values:
+        random_move = random.choice(children_of_state(state, 1))
+        move = move_made(state, random_move)
+    else:
+        move = max(values, key=lambda k: values[k])
+
+    return move
+
+
+def min_value(state, depth, alpha, beta):
+    if player_win(state, -1):
+        return -np.inf
+
+    if depth == 0:
+        return eval_move(state)
+
+    v = np.inf
+
+    for child in children_of_state(state, -1):
+        new_value = max_value(child, depth-1)
+        v = min(v, new_value)
+
+    return v
+
+
+def max_value(state, depth, alpha, beta):
+    if player_win(state, 1):
+        return np.inf
+
+    if depth == 0:
+        return eval_move(state)
+
+    v = -np.inf
+
+    for child in children_of_state(state, 1):
+        new_value = min_value(child, depth-1)
+        v = max(v, new_value)
+
+    return v
+
+
+def minimax(state, depth, alpha, beta, maximizing):
     """
     Minimax algorithm with Alpha-beta pruning to find score of a state
     """
 
     if player_win(state, 1):
-        return float('inf')
+        return np.inf
 
     if player_win(state, -1):
-        return float('-inf')
+        return -np.inf
 
     if depth == 0:
         return eval_move(state)
 
-    if maximize_player:
-        max_eval = float('-inf')
+    if maximizing:
+        max_eval = -np.inf
 
-        for child in children_of_state(state, 1):
+        for child in children_of_state(state, -1):
             evaluation = minimax(child, depth - 1, alpha, beta, False)
             max_eval = max(max_eval, evaluation)
             alpha = max(alpha, evaluation)
@@ -106,9 +163,9 @@ def minimax(state, depth, alpha, beta, maximize_player):
         return max_eval
 
     else:
-        min_eval = float('inf')
+        min_eval = np.inf
 
-        for child in children_of_state(state, -1):
+        for child in children_of_state(state, 1):
             evaluation = minimax(child, depth - 1, alpha, beta, True)
             min_eval = min(min_eval, evaluation)
             beta = min(beta, evaluation)
@@ -170,7 +227,6 @@ def eval_move(state):
     Returns 0 if equal
     returns >0 if player -1 is likely to win
     """
-
     eval_weights = [[3, 4, 5, 7, 5, 4, 3],
                     [4, 6, 8, 10, 8, 6, 4],
                     [5, 8, 11, 13, 11, 8, 5],
@@ -324,7 +380,9 @@ def play_game(vs_server=False):
 
 
 def main():
-    play_game(vs_server=True)
+    for i in range(20):
+        play_game(vs_server=True)
+
     # TODO: Change vs_server to True when you are ready to play against the server
     # the results of your games there will be logged
 
