@@ -76,7 +76,7 @@ def minimax(state, depth):
     values = {x: None for x in range(7)}
 
     for child in children_of_state(state, 1):
-        v = min_value(child, depth-1, -np.inf, np.inf)
+        v = min_value(child, depth - 1, -np.inf, np.inf)
         values[move_made(state, child)] = v
 
     for key, value in dict(values).items():
